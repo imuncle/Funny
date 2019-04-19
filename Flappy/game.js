@@ -225,7 +225,7 @@ function doMouseDown(){
 
 window.onload = function(){
 	var sprites = {
-		bird:"https://raw.githubusercontent.com/imuncle/Funny/master/Flappy/imgs/fish.png",
+		bird:"https://raw.githubusercontent.com/imuncle/Funny/master/Flappy/imgs/bird.png",
 		background:"https://raw.githubusercontent.com/imuncle/Funny/master/Flappy//imgs/background.png",
 		pipetop:"https://raw.githubusercontent.com/imuncle/Funny/master/Flappy//imgs/pipetop.png",
 		pipebottom:"https://raw.githubusercontent.com/imuncle/Funny/master/Flappy//imgs/pipebottom.png"
