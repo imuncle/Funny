@@ -223,7 +223,7 @@ function doMouseDown(){
     game.bird.flap();
 }
 
-window.onload = function(){
+function GameStart(){
 	var sprites = {
 		bird:"https://raw.githubusercontent.com/imuncle/Funny/master/Flappy/imgs/bird.png",
 		background:"https://raw.githubusercontent.com/imuncle/Funny/master/Flappy//imgs/background.png",
@@ -242,5 +242,6 @@ window.onload = function(){
 		images = imgs;
 		start();
 	})
-
 }
+
+GameStart();
