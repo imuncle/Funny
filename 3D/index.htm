@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>三维立体画制作</title>
+<meta http-equiv=Content-Type content="text/html;charset=utf-8">
+</head>
+<body>
+<div align="center">
+<canvas id="myCanvas" width="640" height="480" >您的浏览器不支持 HTML5 canvas 标签。</canvas>
+</div>
+</br>
+<div align="center">
+<input type="file" id="myFile" ></input>
+<button id="convertTo3DBtn">生成3D图</button>
+</div>
+<hr>
+<div align="center">
+ 
+	<table border="2" width="500" cellpadding="12" bordercolorlight="#FFFFFF" 
+	bordercolordark="#808080" bordercolor="#C0C0C0" cellspacing="3" bgcolor="#C0C0C0"> 
+	  <tr> 
+		<td bgcolor="#C0C0C0" bordercolorlight="#FFFFFF" bordercolordark="#808080" 
+		bordercolor="#C0C0C0"><form method="POST" action="_derived/nortbots.htm" webbot-action="--WEBBOT-SELF--" onSubmit="location.href='_derived/nortbots.htm';return false;" WEBBOT-onSubmit> 
+		  <div align="center"><center><p><font color="#000000">文本立体画</font></p> 
+		  </center></div><p><font color="#000000"><br> 
+		  三维图形：<select name="D1" size="1"> 
+			<option selected value="0">杉树</option>
+			<option value="1">矩形</option>
+			<option value="2">心形</option>
+			<option value="3">“1”字形</option>
+			<option value="4">三角形</option>
+			<option value="5">“T”字形</option>
+		  </select></font></p>
+		  <p><font color="#000000">字符串: <input type="text" name="T1" size="40"  
+		  value="床前明月光疑是地上霜举头望明月低头思故乡"></font></p> 
+		  <div align="center"><center><p><font color="#000000"><input type="button" 
+		  value="开始生成" name="B1" onclick="f1(this.form)"></font></p> 
+		  </center></div> 
+		</form> 
+		</td> 
+	  </tr> 
+	</table> 
+	<table border="2" width="440" cellpadding="14" bordercolorlight="#00CCCC" bordercolordark="#2F5E5E" bordercolor="#008080" bgcolor="#008080" cellspacing="4" style="font-size:10pt">
+		<tbody>
+			<tr>
+				<td>
+					<center>
+						<font color="#FFFFFF" face="宋体" id="3d_image"></font>
+					</center>
+				</td>
+			</tr>
+		</tbody>
+	</table>
+</div>
+<script>
+var convertButton = document.getElementById("convertTo3DBtn"); 
+bindButtonEvent(convertButton, "click", convertTo3DPic);  
+var myCanvas = document.getElementById('myCanvas');
+var myFile = document.getElementById('myFile');
+
+var NO = 999;     /* 一个标志，指示有无对应的点*/
+var W = 64;       /* 重复的图案宽度 */
+var MAXX = 640;   /* 三维画最大宽度 */
+var MAXY = 480;   /* 三维画最大高度 */
+var MAXZ = 7;     /* 三维形象最大层数 */
+var hf =[ //3D图像生成矩阵，数字越大视觉效果越近
+	 "11111111111111111111111111111111",
+     "11111111111111111111111111111111",
+     "11111111111111111111111111111111",
+     "11117777777711111177777777711111",
+     "11117777777771111177111111771111",
+     "11111111117771111177111111771111",
+     "11111111117771111177111111771111",
+     "11117777777771111177111111771111",
+     "11111111117771111177111111771111",
+     "11111111117771111177111111771111",
+     "11117777777771111177111111771111",
+     "11117777777711111177777777711111",
+     "11111111111111111111111111111111",
+     "11111111111111111111111111111111",
+     "11112233445566776655443322111111",
+     "11112233445566776655443322111111",
+     "11111111111111111111111111111111",
+     "11111111111111111111111111111111",
+     "11112223344456665443322211111111",
+     "11112223344456665443322211111111",
+     "10101010101010101010101010101010",
+     "01010101010101010101010101010101",
+     "10101010101010101010101010101010",
+     "01010101010101010101010101010101"];
+// var hf = [
+// 	"010",
+// 	"010"
+// ];
+var hh = "0123456789";//用于图像层次查找、匹配
+
+dot0=new array(MAXX-1);
+dot1=new array(MAXX-1);
+dot2=new array(MAXX-1);
+
+function array(size){
+	this.length=size;
+	for(x=1;x<=size;x++)
+		this[x]=0;
+	return this;
+}
+
+init();//初始化画布，显示提示文字
+
+function init() {
+	var c=document.getElementById("myCanvas");
+	var ctx=c.getContext("2d");
+	// Create gradient
+	var grd=ctx.createLinearGradient(0,0,640,0);
+	grd.addColorStop(0,"blue");
+	grd.addColorStop(1,"green");
+	// Fill with gradient
+	ctx.fillStyle=grd;
+	ctx.fillRect(0,0,640,480);
+	ctx.font="30px Arial";
+	ctx.strokeText("请选择一张分辨率为640*480的图片",90,240);
+}
+myFile.onchange = function(event) {
+    var selectedFile = event.target.files[0];
+	var reader = new FileReader();
+    reader.onload = putImage2Canvas;
+    reader.readAsDataURL(selectedFile);
+}
+function putImage2Canvas(event) {
+    var img = new Image();
+    img.src = event.target.result;
+    img.onload = function(){
+        myCanvas.width = img.width;
+        myCanvas.height = img.height;
+        var context = myCanvas.getContext('2d');
+        context.drawImage(img, 0, 0);
+	}
+}
+
+function getimage(x, y, data, part) {
+	var j,k;
+	k = 0;
+	for(j=y;j<=y+19;j++) {
+		pos = (j*MAXX+x)*4;
+		part[k] = data[pos];
+		part[k+1] = data[pos+1];
+		part[k+2] = data[pos+2];
+		k = k+3;
+	}
+}
+
+function putimage(x, y, data, part) {
+	var j,k;
+	k = 0;
+	for(j=y;j<=y+19;j++) {
+		pos = (j*MAXX+x)*4;
+		data[pos] = part[k];
+		data[pos+1] = part[k+1];
+		data[pos+2] = part[k+2];
+		k = k+3;
+	}
+}
+
+function convertTo3DPic() {
+	var context = myCanvas.getContext('2d');
+	var imgdata = context.getImageData(0, 0, MAXX, MAXY);
+	//处理imgdata
+	var p=new array(20*3);  //分配内存，准备存放图块数据
+	for(y=0; y< MAXY;y+=20){               //从0到MAXY一行一行进行
+		for(x=0; x<MAXX; x++){               //生成平面数据
+		  dot1[x]=NO;
+		  dot2[x]=NO;
+		  if (x+W < MAXX) dot1[x]= x + W;
+		  if (x-W >= 0)    dot2[x]= x - W;
+		}
+		for(h=0; h<=MAXZ; h++){                 //从1层到MAXZ层，逐层处理
+			for(x=0; x<=MAXX; x++){
+				lx = x - W /2 + h;                //越靠前的图层，两点的距离越近
+				rx = x + W / 2 - h;
+				if ((hf[Math.floor(y/20)].substring(Math.floor(x/20),Math.floor(x/20)+1)== hh.substring(h,h+1)) && (lx >= 0) && (rx < MAXX)){
+					if (dot1[lx] !=NO) dot2[dot1[lx]]= NO;
+					dot1[lx] = rx;
+					if(dot2[rx] != NO) dot1[dot2[rx]] = NO;
+					dot2[rx] = lx;
+				}
+			}
+		}
+		
+		//依据前面计算得到的数据画出一行三维画
+		for(x=0; x<MAXX; x++){
+			if(dot2[x]==NO){
+			  dot0[x] = x;
+			  tx = x;
+			  while(dot1[tx]!=NO){
+				tx = dot1[tx];
+				dot0[tx] = x;
+			  }
+			}
+		}
+		for(x=0; x<MAXX; x++){
+			if(dot0[x] != x){
+			  getimage(dot0[x], y, imgdata.data, p);
+			  putimage(x, y, imgdata.data, p);
+			}
+		}
+	}
+	context.putImageData(imgdata, 0, 0);
+}
+
+function bindButtonEvent(element, type, handler) {  
+   if(element.addEventListener) {  
+	  element.addEventListener(type, handler, false);  
+   } else {  
+	  element.attachEvent('on'+type, handler);  
+   }  
+}
+</script>
+<script>
+no=99
+ w = 5
+ maxx = 30
+ maxy = 18
+ xx=[[
+"000000000000000000000000000000",
+"000000000000001000000000000000",
+"000000000000011100000000000000",
+"000000000000111110000000000000",
+"000000000001111111000000000000",
+"000000000011111111100000000000",
+"000000000111111111110000000000",
+"000000001111111111111000000000",
+"000000011111111111111100000000",
+"000000111111111111111110000000",
+"000000000111111111110000000000",
+"000000001111111111111000000000",
+"000000011111111111111100000000",
+"000000111111111111111110000000",
+"000000000000111110000000000000",
+"000000000000111110000000000000",
+"000000000000111110000000000000",
+"000000000000000000000000000000"],[
+
+"000000000000000000000000000000",
+"000000000000000000000000000000",
+"000000111111111111111110000000",
+"000000111111111111111110000000",
+"000000111111111111111110000000",
+"000000111111111111111110000000",
+"000000111111111111111110000000",
+"000000111111111111111110000000",
+"000000111111111111111110000000",
+"000000111111111111111110000000",
+"000000111111111111111110000000",
+"000000111111111111111110000000",
+"000000111111111111111110000000",
+"000000111111111111111110000000",
+"000000000000000000000000000000",
+"000000000000000000000000000000",
+"000000000000000000000000000000",
+"000000000000000000000000000000"],[
+
+"000000000000000000000000000000",
+"000000000111100000111100000000",
+"000000001111111011111110000000",
+"000000011111111111111111000000",
+"000000011111111111111111000000",
+"000000011111111111111111000000",
+"000000011111111111111111000000",
+"000000001111111111111110000000",
+"000000001111111111111110000000",
+"000000001111111111111110000000",
+"000000000111111111111100000000",
+"000000000111111111111100000000",
+"000000000011111111111000000000",
+"000000000001111111110000000000",
+"000000000000011111000000000000",
+"000000000000001110000000000000",
+"000000000000000000000000000000",
+"000000000000000000000000000000"],[
+
+"000000000000000000000000000000",
+"000000000000000000000000000000",
+"000000000000111111000000000000",
+"000000000011111111000000000000",
+"000000000011111111000000000000",
+"000000000000111111000000000000",
+"000000000000111111000000000000",
+"000000000000111111000000000000",
+"000000000000111111000000000000",
+"000000000000111111000000000000",
+"000000000000111111000000000000",
+"000000000000111111000000000000",
+"000000000000111111000000000000",
+"000000000000111111000000000000",
+"000000000000111111000000000000",
+"000000000000111111000000000000",
+"000000000001111111100000000000",
+"000000000000000000000000000000"],[
+
+"000000000000000000000000000000",
+"000000000000001000000000000000",
+"000000000000011100000000000000",
+"000000000000111110000000000000",
+"000000000001111111000000000000",
+"000000000011111111100000000000",
+"000000000111111111110000000000",
+"000000001111111111111000000000",
+"000000011111111111111100000000",
+"000000111111111111111110000000",
+"000001111111111111111111000000",
+"000011111111111111111111100000",
+"000111111111111111111111110000",
+"001111111111111111111111111000",
+"011111111111111111111111111100",
+"000000000000000000000000000000",
+"000000000000000000000000000000",
+"000000000000000000000000000000"],[
+
+
+"000000000000000000000000000000",
+"000000000000000000000000000000",
+"000000011111111111111000000000",
+"000000011111111111111000000000",
+"000000011111111111111000000000",
+"000000011111111111111000000000",
+"000000011111111111111000000000",
+"000000000001111110000000000000",
+"000000000001111110000000000000",
+"000000000001111110000000000000",
+"000000000001111110000000000000",
+"000000000001111110000000000000",
+"000000000001111110000000000000",
+"000000000001111110000000000000",
+"000000000001111110000000000000",
+"000000000001111110000000000000",
+"000000000000000000000000000000",
+"000000000000000000000000000000"]]
+
+function array(size){
+	this.length=size;
+	for(x=1;x<=size;x++)
+	this[x]=0;
+	return this;
+}
+
+dot1=new array(maxx);
+dot2=new array(maxx);
+dot0=new array(maxx);
+
+function f1(form)
+{
+	document.getElementById("3d_image").innerHTML = "";
+	tt=form.D1.value;
+	bb=form.T1.value;
+	l=bb.length;
+
+	for (y=1;y<= maxy;y++){       
+		for (x=1;x<=maxx;x++){
+			dot1[x] = no;
+			dot2[x] = no;
+			if ((x+w)<=maxx) dot1[x] = x+w;
+			if ((x-w)>=1)  dot2[x] = x-w;
+		}
+		for( x = 1;x<= maxx;x++){
+			leftx = x - 2
+			rightx = x + 2
+			if ((xx[tt][y-1].substring(x-1,x)== "1") & (leftx >= 1) & (rightx <= maxx)){
+			if (dot1[leftx]!=no) dot2[dot1[leftx]]=no;
+				dot1[leftx] = rightx;
+			if (dot2[rightx] != no) dot1[dot2[rightx]] = no;
+			dot2[rightx] = leftx;
+			}
+		}
+
+		yy=(y-1)*w;
+		yy=yy%l;
+		ss="";
+
+		for( x = 1;x<= maxx;x++){
+			if (dot2[x] == no){
+				dot0[x]=x;
+				tmpx = x;
+				while(dot1[tmpx]!=no){
+					tmpx = dot1[tmpx];
+					dot0[tmpx]=x;
+				}
+			}
+			x0=yy+(x-1)%w;
+			if(x0+1>l) x0=x0-l;
+			if(dot0[x]==x) ss=ss+bb.substring(x0,x0+1)
+			else {
+				ss=ss+ss.substring(dot0[x]-1,dot0[x]);
+			}
+		}
+		document.getElementById("3d_image").innerHTML += ss+"<br>";
+	}
+}
+</script>
+</body>
+</html>
